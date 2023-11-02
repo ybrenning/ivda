@@ -2,46 +2,59 @@ from dash import Dash, dcc, html, callback, Output, Input
 from dash.exceptions import PreventUpdate
 import plotly.express as px
 import pandas as pd
-app = Dash(__name__)
 
-app.layout = html.Div([
-    html.H4('Interactive scatter plot with the dataset'),
-    html.Div([
-        "Attribut",
-        dcc.Dropdown(['\'Wage(in Euro)\'','\'Overall\''], value='Overall', id='my-input',
-    clearable=False),
-    dcc.Graph(id="dist-plot"),
-    dcc.Graph(id="scatter-plot"),
-    ])
-])
+app = Dash(__name__)
+hover_data = ["'Full Name'", "'Wage(in Euro)'", "'Overall'"]
+app.layout = html.Div(
+    [
+        html.H4("Interactive scatter plot with the dataset"),
+        html.Div(
+            [
+                "Attribut",
+                dcc.Dropdown(
+                    ["'Wage(in Euro)'", "'Overall'"],
+                    value="Overall",
+                    id="my-input",
+                    clearable=False,
+                ),
+                dcc.Graph(id="dist-plot"),
+                dcc.Graph(id="scatter-plot"),
+            ]
+        ),
+    ]
+)
+
+
 @app.callback(
     Output("scatter-plot", "figure"),
-    Input(component_id='my-input', component_property='value')
+    Input(component_id="my-input", component_property="value"),
 )
 def update_bar_chart(input_value):
-    df = pd.read_csv('ivda/01/data/Aufgabe-1.csv', on_bad_lines='skip')
+    df = pd.read_csv("ivda/01/data/Aufgabe-1.csv", on_bad_lines="skip")
     try:
-        fig = px.scatter(  df,x='\'Age\'', y=input_value,
-            hover_data=['\'Full Name\''])
+        fig = px.scatter(df, x="'Age'", y=input_value, hover_data=hover_data)
     except:
         pass
     return fig
 
+
 @app.callback(
     Output("dist-plot", "figure"),
-    Input(component_id='my-input', component_property='value')
+    Input(component_id="my-input", component_property="value"),
 )
 def update_bar_chart(input_value):
-    df = pd.read_csv('ivda/01/data/Aufgabe-1.csv', on_bad_lines='skip')
+    df = pd.read_csv("ivda/01/data/Aufgabe-1.csv", on_bad_lines="skip")
     try:
-        fig2 = px.histogram(  df,x='\'Age\'', y=input_value)
+        fig2 = px.histogram(df, x="'Age'", y=input_value, hover_data=hover_data)
     except:
         pass
     return fig2
+
+
 app.run_server(debug=True)
 
 
-'''
+"""
 app.layout = html.Div([
     html.H4('Interactive scatter plot with the dataset'),
     dcc.RadioItems(options=["\'Wage(in Euro)\'", '\'Overall\''], value="\'Overall\'",id='controls-and-radio-item'),
@@ -70,4 +83,4 @@ def update_bar_chart(slider_range):
 
 
 app.run_server(debug=True)
-'''
+"""
