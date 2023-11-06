@@ -1,13 +1,21 @@
-from dash import Dash, dcc, html, callback, Output, Input
-from dash.exceptions import PreventUpdate
-import plotly.express as px
-import pandas as pd
+import os
 
-df = pd.read_csv("ivda/01/data/Aufgabe-1.csv", on_bad_lines="skip",low_memory=False)
+import pandas as pd
+import plotly.express as px
+from dash import Dash, Input, Output, dcc, html
+from dash.exceptions import PreventUpdate
+
+DATA_PATH = os.getcwd() + "/data/Aufgabe-1.csv"
+
+# TODO: Get preprocessed data instead of skip
+df = pd.read_csv(DATA_PATH, on_bad_lines="skip", low_memory=False)
+
 app = Dash(__name__)
+
 hover_data = ["'Full Name'", "'Wage(in Euro)'", "'Overall'", "'Nationality'"]
 nationalities = df["\'Nationality\'"]
 clubs = df["\'Club Name\'"]
+
 app.layout = html.Div(
     [
         html.H4("Interactive scatter plot with the dataset"),
@@ -19,12 +27,12 @@ app.layout = html.Div(
                     value="'Overall'",
                     id="attribute",
                     clearable=False,
-                ),"Filter Nationality",
+                ), "Filter Nationality",
                 dcc.Dropdown(
                     nationalities.to_list(),
                     id="filter_nationality",
                     multi=True
-                ),"Filter Club Name",
+                ), "Filter Club Name",
                 dcc.Dropdown(
                     clubs.to_list(),
                     id="filter_club",
@@ -39,25 +47,33 @@ app.layout = html.Div(
     ]
 )
 
+
 @app.callback(
     Output("scatter-plot", "figure"),
     Input("attribute", "value"),
     Input("filter_nationality", "value"),
     Input("filter_club", "value"),
 )
-def update_scatter_chart(input_value,filter_nationality,filter_club):
-    
-    df = pd.read_csv("ivda/01/data/Aufgabe-1.csv", on_bad_lines="skip",low_memory=False)
+def update_scatter_chart(input_value, filter_nationality, filter_club):
+    df = pd.read_csv(DATA_PATH, on_bad_lines="skip", low_memory=False)
+
     color = None
     if filter_nationality:
         df = df[df["\'Nationality\'"].isin(filter_nationality)]
-        color="'Nationality'"
+        color = "'Nationality'"
     if filter_club:
         df = df[df["\'Club Name\'"].isin(filter_club)]
-        color="'Club Name'"
+        color = "'Club Name'"
     if not input_value:
         raise PreventUpdate
-    return px.scatter(df, x="'Age'", y=input_value, hover_data=hover_data, color=color)
+
+    return px.scatter(
+        df,
+        x="'Age'",
+        y=input_value,
+        hover_data=hover_data,
+        color=color
+    )
 
 
 @app.callback(
@@ -66,21 +82,31 @@ def update_scatter_chart(input_value,filter_nationality,filter_club):
     Input("filter_nationality", "value"),
     Input("filter_club", "value"),
 )
-def update_bar_chart(input_value,filter_nationality,filter_club):
-    df = pd.read_csv("ivda/01/data/Aufgabe-1.csv", on_bad_lines="skip",low_memory=False)
+def update_bar_chart(input_value, filter_nationality, filter_club):
+    df = pd.read_csv(DATA_PATH, on_bad_lines="skip", low_memory=False)
+
     color = None
     if filter_nationality:
         df = df[df["\'Nationality\'"].isin(filter_nationality)]
-        color="'Nationality'"
+        color = "'Nationality'"
     if filter_club:
         df = df[df["\'Club Name\'"].isin(filter_club)]
-        color="'Club Name'"
+        color = "'Club Name'"
     if not input_value:
         raise PreventUpdate
-    return px.histogram(df, x="'Age'", y=input_value, hover_data=hover_data,color=color)
+
+    return px.histogram(
+        df,
+        x="'Age'",
+        y=input_value,
+        hover_data=hover_data,
+        color=color
+    )
 
 
-app.run_server(debug=True)
+if __name__ == "__main__":
+    print("starting app")
+    app.run_server(debug=True)
 
 
 """
