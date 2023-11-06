@@ -105,7 +105,6 @@ def update_bar_chart(input_value, filter_nationality, filter_club):
 
 
 if __name__ == "__main__":
-    print("starting app")
     app.run_server(debug=True)
 
 
