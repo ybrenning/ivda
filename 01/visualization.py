@@ -2,14 +2,11 @@ import os
 
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from dash import Dash, Input, Output, dcc, html, dash_table
 from dash.exceptions import PreventUpdate
 
 DATA_PATH = os.getcwd() + "/ivda/01/data/processed.csv"
 
-# TODO: Get preprocessed data instead of skip
-# df = pd.read_csv(DATA_PATH, on_bad_lines="skip", low_memory=False)
 df = pd.read_csv(DATA_PATH, low_memory=False)
 
 app = Dash(__name__)
@@ -21,7 +18,7 @@ clubs = df["Club Name"]
 
 app.layout = html.Div(
     [
-        html.H1("Abgabe 1 von Jannick Brenning und Yannik Lange"),
+        html.H1("Abgabe 1 von Yannick Brenning und Yannik Lange"),
         html.Div(
             [
                 html.H4("Attribute"),
@@ -37,7 +34,9 @@ app.layout = html.Div(
             [
                 html.H4("Filter by Nationality"),
                 dcc.Dropdown(
-                    nationalities.to_list(), id="filter_nationality", multi=True
+                    nationalities.to_list(),
+                    id="filter_nationality",
+                    multi=True
                 ),
                 html.H4("Filter by Club Name"),
                 dcc.Dropdown(clubs.to_list(), id="filter_club", multi=True),
@@ -72,10 +71,18 @@ app.layout = html.Div(
         html.Div(
             [
                 dcc.Input(
-                    id="input1", type="number", value=1, min=1, max=len(df.index)
+                    id="input1",
+                    type="number",
+                    value=1,
+                    min=1,
+                    max=len(df.index)
                 ),
                 dcc.Input(
-                    id="input2", type="number", value=2, min=1, max=len(df.index)
+                    id="input2",
+                    type="number",
+                    value=2,
+                    min=1,
+                    max=len(df.index)
                 ),
                 dash_table.DataTable(id="table1"),
             ]
@@ -108,13 +115,20 @@ def update_table(input1, input2):
     Input("filter_club", "value"),
     Input("range-slider2", "value"),
 )
-def update_scatter_chart(input_value, filter_nationality, filter_club, slider_range):
+def update_scatter_chart(
+        input_value,
+        filter_nationality,
+        filter_club,
+        slider_range
+):
     df_filtered = df
     low, high = slider_range
     mask = (df["Age"] > low) & (df["Age"] < high)
     color = None
     if filter_nationality:
-        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
+        df_filtered = df_filtered[
+            df_filtered["Nationality"].isin(filter_nationality)
+        ]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
@@ -123,7 +137,11 @@ def update_scatter_chart(input_value, filter_nationality, filter_club, slider_ra
         raise PreventUpdate
 
     return px.scatter(
-        df_filtered[mask], x="Age", y=input_value, hover_data=hover_data, color=color
+        df_filtered[mask],
+        x="Age",
+        y=input_value,
+        hover_data=hover_data,
+        color=color
     )
 
 
@@ -134,12 +152,19 @@ def update_scatter_chart(input_value, filter_nationality, filter_club, slider_ra
     Input("filter_club", "value"),
     Input("range-slider", "value"),
 )
-def update_bar_chart(input_value, filter_nationality, filter_club, slider_range):
+def update_bar_chart(
+        input_value,
+        filter_nationality,
+        filter_club,
+        slider_range
+):
     df_filtered = df
     low, high = slider_range
     color = None
     if filter_nationality:
-        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
+        df_filtered = df_filtered[
+            df_filtered["Nationality"].isin(filter_nationality)
+        ]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
@@ -149,7 +174,11 @@ def update_bar_chart(input_value, filter_nationality, filter_club, slider_range)
     mask = (df_filtered["Age"] > low) & (df_filtered["Age"] < high)
 
     return px.histogram(
-        df_filtered[mask], x="Age", y=input_value, hover_data=hover_data, color=color
+        df_filtered[mask],
+        x="Age",
+        y=input_value,
+        hover_data=hover_data,
+        color=color
     )
 
 
