@@ -5,7 +5,7 @@ import plotly.express as px
 from dash import Dash, Input, Output, dcc, html, dash_table
 from dash.exceptions import PreventUpdate
 
-DATA_PATH = os.getcwd() + "/ivda/01/data/processed.csv"
+DATA_PATH = os.getcwd() + "/01/data/processed.csv"
 
 df = pd.read_csv(DATA_PATH, low_memory=False)
 
@@ -15,6 +15,10 @@ hover_data = ["Full Name", "Wage(in Euro)", "Overall", "Nationality"]
 nationalities = df["Nationality"]
 clubs = df["Club Name"]
 
+# Spieler vergleich schoener machen,
+# Anhand der Namen oder Zeilennummer auwähelen
+# Spielerbild erscheint
+# Dropdown mit Attribut auswählbar die angezeigt werden sollen
 
 app.layout = html.Div(
     [
@@ -174,6 +178,7 @@ def update_bar_chart(
     mask = (df_filtered["Age"] > low) & (df_filtered["Age"] < high)
 
     return px.histogram(
+        #TODO: wie oft kommt jedes attribut vor
         df_filtered[mask],
         x="Age",
         y=input_value,
