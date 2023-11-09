@@ -5,7 +5,7 @@ import plotly.express as px
 from dash import Dash, Input, Output, dcc, html, dash_table
 from dash.exceptions import PreventUpdate
 
-DATA_PATH = os.getcwd() + "/ivda/01/data/processed.csv"
+DATA_PATH = os.getcwd() + "/data/processed.csv"
 
 df = pd.read_csv(DATA_PATH, low_memory=False)
 
