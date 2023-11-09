@@ -15,10 +15,35 @@ hover_data = ["Full Name", "Wage(in Euro)", "Overall", "Nationality"]
 nationalities = df["Nationality"]
 clubs = df["Club Name"]
 
+STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total"):].tolist()
+
 
 app.layout = html.Div(
     [
         html.H1("Abgabe 1 von Yannick Brenning und Yannik Lange"),
+        html.H2("View Attribute Distributions"),
+        html.Div(
+            [
+                html.H4("Attribute"),
+                dcc.Dropdown(
+                    [
+                        "Overall",
+                        "Potential",
+                        "Value(in Euro)",
+                        "Age",
+                        "Height(in cm)",
+                        "Weight(in kg)",
+                        "TotalStats",
+                        "BaseStats",
+                        "Wage(in Euro)",
+                    ] + STAT_NAMES,
+                    value="Overall",
+                    id="attribute-1",  # TODO: Give this a proper name
+                    clearable=False,
+                ),
+            ]
+        ),
+        dcc.Graph(id="dist"),  # TODO: Give this a proper name
         html.Div(
             [
                 html.H4("Attribute"),
@@ -90,6 +115,14 @@ app.layout = html.Div(
     ],
     style={"marginBottom": 50, "marginTop": 25},
 )
+
+
+@app.callback(
+    Output("dist", "figure"),
+    Input("attribute-1", "value")
+)
+def update_histogram(attribute):
+    return px.histogram(df, x=attribute)
 
 
 @app.callback(
