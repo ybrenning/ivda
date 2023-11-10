@@ -1,5 +1,7 @@
 # IVDA
 
+Interactive Visual Data Analysis (Course at University of Leipzig)
+
 ## Run a submission
 
 Data must be located in `<submission-directory>/data`
