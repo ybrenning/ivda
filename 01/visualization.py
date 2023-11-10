@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 import plotly.express as px
-from dash import Dash, Input, Output, dcc, html, dash_table
+from dash import Dash, Input, Output, dash_table, dcc, html
 from dash.exceptions import PreventUpdate
 
 DATA_PATH = os.getcwd() + "/data/processed.csv"
@@ -20,11 +20,11 @@ STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total"):].tolist()
 
 app.layout = html.Div(
     [
-        html.H1("Abgabe 1 von Yannick Brenning und Yannik Lange"),
+        html.H1("Submission 1 (Yannick Brenning, Yannik Lange)"),
         html.H2("View Attribute Distributions"),
         html.Div(
             [
-                html.H4("Attribute"),
+                html.H4("Select Attribute"),
                 dcc.Dropdown(
                     [
                         "Overall",
@@ -38,12 +38,12 @@ app.layout = html.Div(
                         "Wage(in Euro)",
                     ] + STAT_NAMES,
                     value="Overall",
-                    id="attribute-1",  # TODO: Give this a proper name
+                    id="attribute-dist",
                     clearable=False,
                 ),
             ]
         ),
-        dcc.Graph(id="dist"),  # TODO: Give this a proper name
+        dcc.Graph(id="items-hist"),
         html.Div(
             [
                 html.H4("Attribute"),
@@ -118,8 +118,8 @@ app.layout = html.Div(
 
 
 @app.callback(
-    Output("dist", "figure"),
-    Input("attribute-1", "value")
+    Output("items-hist", "figure"),
+    Input("attribute-dist", "value")
 )
 def update_histogram(attribute):
     return px.histogram(df, x=attribute)
