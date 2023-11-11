@@ -2,10 +2,10 @@ import os
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from dash import Dash, Input, Output, dcc, html, dash_table
+from dash import Dash, Input, Output, dash_table, dcc, html
 from dash.exceptions import PreventUpdate
 
-DATA_PATH = os.getcwd() + "/01/data/processed.csv"
+DATA_PATH = os.getcwd() + "/data/processed.csv"
 
 df = pd.read_csv(DATA_PATH, low_memory=False)
 
@@ -14,6 +14,8 @@ app = Dash(__name__)
 hover_data = ["Full Name", "Wage(in Euro)", "Overall", "Nationality"]
 nationalities = df["Nationality"]
 clubs = df["Club Name"]
+
+STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total"):].tolist()
 excluded_attributes = [
     "Unnamed: 0",
     "Known As",
@@ -30,8 +32,30 @@ excluded_attributes = [
 
 app.layout = html.Div(
     [
-        html.H1("Abgabe 1 von Yannick Brenning und Yannik Lange"),
-        html.Br(style={"height": "30px"}),
+        html.H1("Submission 1 (Yannick Brenning, Yannik Lange)"),
+        html.H2("View Attribute Distributions"),
+        html.Div(
+            [
+                html.H4("Select Attribute"),
+                dcc.Dropdown(
+                    [
+                        "Overall",
+                        "Potential",
+                        "Value(in Euro)",
+                        "Age",
+                        "Height(in cm)",
+                        "Weight(in kg)",
+                        "TotalStats",
+                        "BaseStats",
+                        "Wage(in Euro)",
+                    ] + STAT_NAMES,
+                    value="Overall",
+                    id="attribute-dist",
+                    clearable=False,
+                ),
+            ]
+        ),
+        dcc.Graph(id="items-hist"),
         html.Div(
             [
                 html.H4("Attribute"),
@@ -187,6 +211,14 @@ app.layout = html.Div(
         "width": "90%",
     },
 )
+
+
+@app.callback(
+    Output("items-hist", "figure"),
+    Input("attribute-dist", "value")
+)
+def update_histogram(attribute):
+    return px.histogram(df, x=attribute)
 
 
 @app.callback(
