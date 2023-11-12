@@ -1,6 +1,4 @@
 import os
-
-import numpy as np
 import pandas as pd
 import plotly.express as px
 from dash import Dash, Input, Output, dash_table, dcc, html
@@ -15,15 +13,13 @@ app = Dash(__name__)
 hover_data = ["Full Name", "Wage(in Euro)", "Overall", "Nationality"]
 clubs = df["Club Name"]
 
-STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total"):].tolist()
+STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total") :].tolist()
 
 excluded_attributes = [
-    "Unnamed: 0",
     "Known As",
     "Full Name",
     "National Team Image Link",
     "Image Link",
-    "Full Name",
 ]
 
 app.layout = html.Div(
@@ -75,9 +71,7 @@ app.layout = html.Div(
             [
                 html.H4("Filter by Nationality"),
                 dcc.Dropdown(
-                    df["Nationality"].to_list(),
-                    id="filter_nationality",
-                    multi=True
+                    df["Nationality"].to_list(), id="filter_nationality", multi=True
                 ),
                 html.H4("Filter by Club Name"),
                 dcc.Dropdown(clubs.to_list(), id="filter_club", multi=True),
@@ -183,10 +177,7 @@ app.layout = html.Div(
                     [
                         html.H3("Choose Attributes"),
                         dcc.Dropdown(
-                            list(
-                                set(df.columns.to_list()) ^
-                                set(excluded_attributes)
-                            ),
+                            list(set(df.columns.to_list()) ^ set(excluded_attributes)),
                             id="attribute_input",
                             multi=True,
                         ),
@@ -194,11 +185,7 @@ app.layout = html.Div(
                             id="table1",
                         ),
                     ],
-                    style={
-                        "text-align": "left",
-                        "margin": "auto",
-                        "width": "50%"
-                    },
+                    style={"text-align": "left", "margin": "auto", "width": "50%"},
                 ),
             ],
             style={
@@ -234,7 +221,7 @@ def update_histogram(attribute):
     Input(component_id="attribute_input", component_property="value"),
 )
 def update_table(input1, input2, name_input1, name_input2, attribute_input):
-    if not input1 or not input2 or not attribute_input:
+    if input1 is None or input2 is None or attribute_input is None:
         raise PreventUpdate
 
     attribute_input.insert(0, "Full Name")
@@ -246,9 +233,7 @@ def update_table(input1, input2, name_input1, name_input2, attribute_input):
     df_filtered_transposed["Row Number"] = df_filtered_transposed.index
     data = df_filtered_transposed.to_dict("records")
 
-    columns = [
-        {"name": str(i), "id": str(i)} for i in df_filtered_transposed.columns
-    ]
+    columns = [{"name": str(i), "id": str(i)} for i in df_filtered_transposed.columns]
 
     return data, columns
 
@@ -260,21 +245,14 @@ def update_table(input1, input2, name_input1, name_input2, attribute_input):
     Input("filter_club", "value"),
     Input("range-slider2", "value"),
 )
-def update_scatter_chart(
-        input_value,
-        filter_nationality,
-        filter_club,
-        slider_range
-):
+def update_scatter_chart(input_value, filter_nationality, filter_club, slider_range):
     df_filtered = df
     low, high = slider_range
     mask = (df["Age"] > low) & (df["Age"] < high)
     color = None
 
     if filter_nationality:
-        df_filtered = df_filtered[
-            df_filtered["Nationality"].isin(filter_nationality)
-        ]
+        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
@@ -283,11 +261,7 @@ def update_scatter_chart(
         raise PreventUpdate
 
     return px.scatter(
-        df_filtered[mask],
-        x="Age",
-        y=input_value,
-        hover_data=hover_data,
-        color=color
+        df_filtered[mask], x="Age", y=input_value, hover_data=hover_data, color=color
     )
 
 
@@ -298,20 +272,13 @@ def update_scatter_chart(
     Input("filter_club", "value"),
     Input("range-slider", "value"),
 )
-def update_bar_chart(
-        input_value,
-        filter_nationality,
-        filter_club,
-        slider_range
-):
+def update_bar_chart(input_value, filter_nationality, filter_club, slider_range):
     df_filtered = df
     low, high = slider_range
     color = None
 
     if filter_nationality:
-        df_filtered = df_filtered[
-            df_filtered["Nationality"].isin(filter_nationality)
-        ]
+        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
@@ -321,7 +288,6 @@ def update_bar_chart(
     mask = (df_filtered["Age"] > low) & (df_filtered["Age"] < high)
 
     return px.histogram(
-        # TODO: wie oft kommt jedes attribut vor
         df_filtered[mask],
         x="Age",
         y=input_value,
@@ -330,25 +296,6 @@ def update_bar_chart(
     )
 
 
-'''
-@app.callback(
-    Output("name_input2", "value"),
-    Output("name_input1", "value"),
-    Input("number_input2", "value"),
-    Input("number_input1", "value"),
-)
-def update_names_from_numbers(input2, input1):
-    options2 = [{"label": name, "value": name} for name in df["Full Name"]]
-    options1 = options2
-
-    if input2 is not None:
-        options2 = [df["Full Name"].iloc[int(input2)]]
-    if input1 is not None:
-        options1 = [df["Full Name"].iloc[int(input1)]]
-
-    return None, None
-'''
-
 @app.callback(
     Output("number_input2", "value"),
     Output("number_input1", "value"),
@@ -356,15 +303,12 @@ def update_names_from_numbers(input2, input1):
     Input("name_input1", "value"),
 )
 def update_numbers_from_names(name2, name1):
-    value2 = df[
-        df["Full Name"] == name2
-    ].index[0] if name2 is not None else None
+    value2 = df[df["Full Name"] == name2].index[0] if name2 is not None else None
 
-    value1 = df[
-        df["Full Name"] == name1
-    ].index[0] if name1 is not None else None
+    value1 = df[df["Full Name"] == name1].index[0] if name1 is not None else None
 
     return value2, value1
+
 
 if __name__ == "__main__":
     app.run_server(debug=True)
