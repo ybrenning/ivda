@@ -211,6 +211,12 @@ app.layout = html.Div(
                     ],
                     style={"text-align": "left", "margin": "auto", "width": "50%"},
                 ),
+                html.Div([
+                    html.Img(id="img-1", src=""),
+                ], style={"text-align": "left", "display": "inline-block", "margin-top": 20, "margin-right": 20}),
+                html.Div([
+                    html.Img(id="img-2", src=""),
+                ], style={"text-align": "right", "display": "inline-block", "margin-left": 20}),
             ],
             style={
                 "margin": "auto",
@@ -253,6 +259,8 @@ def update_histogram(attribute, filter_nationality, filter_club):
 @app.callback(
     Output("table1", "data"),
     Output("table1", "columns"),
+    Output("img-1", "src"),
+    Output("img-2", "src"),
     Input(component_id="number_input1", component_property="value"),
     Input(component_id="number_input2", component_property="value"),
     Input(component_id="name_input1", component_property="value"),
@@ -274,7 +282,9 @@ def update_table(input1, input2, name_input1, name_input2, attribute_input):
 
     columns = [{"name": str(i), "id": str(i)} for i in df_filtered_transposed.columns]
 
-    return data, columns
+    img1, img2 = df.loc[df_filtered.index.tolist()[0], "Image Link"], df.loc[df_filtered.index.tolist()[1], "Image Link"]
+
+    return data, columns, img1, img2
 
 
 @app.callback(
