@@ -12,10 +12,9 @@ df = pd.read_csv(DATA_PATH, low_memory=False)
 app = Dash(__name__)
 
 hover_data = ["Full Name", "Wage(in Euro)", "Overall", "Nationality"]
-nationalities = df["Nationality"]
 clubs = df["Club Name"]
 
-STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total"):].tolist()
+STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total") :].tolist()
 excluded_attributes = [
     "Unnamed: 0",
     "Known As",
@@ -24,11 +23,6 @@ excluded_attributes = [
     "Image Link",
     "Full Name",
 ]
-
-# Spieler vergleich schoener machen,
-# Anhand der Namen oder Zeilennummer auwähelen
-# Spielerbild erscheint
-# Dropdown mit Attribut auswählbar die angezeigt werden sollen
 
 app.layout = html.Div(
     [
@@ -48,7 +42,8 @@ app.layout = html.Div(
                         "TotalStats",
                         "BaseStats",
                         "Wage(in Euro)",
-                    ] + STAT_NAMES,
+                    ]
+                    + STAT_NAMES,
                     value="Overall",
                     id="attribute-dist",
                     clearable=False,
@@ -78,7 +73,7 @@ app.layout = html.Div(
             [
                 html.H4("Filter by Nationality"),
                 dcc.Dropdown(
-                    nationalities.to_list(), id="filter_nationality", multi=True
+                    df["Nationality"].to_list(), id="filter_nationality", multi=True
                 ),
                 html.H4("Filter by Club Name"),
                 dcc.Dropdown(clubs.to_list(), id="filter_club", multi=True),
@@ -143,7 +138,7 @@ app.layout = html.Div(
                             min=1,
                             max=len(df.index),
                         ),
-                        html.H3("Player Name: (overwrites Row Number)"),
+                        html.H3("Player Name:"),
                         dcc.Dropdown(
                             df["Full Name"].tolist(),
                             id="name_input1",
@@ -166,7 +161,7 @@ app.layout = html.Div(
                             min=1,
                             max=len(df.index),
                         ),
-                        html.H3("Player Name: (overwrites Row Number)"),
+                        html.H3("Player Name:"),
                         dcc.Dropdown(
                             df["Full Name"].tolist(),
                             id="name_input2",
@@ -198,7 +193,7 @@ app.layout = html.Div(
             style={
                 "margin": "auto",
                 "width": "50%",
-                'fontFamily': 'DejaVu Serif, sans-serif'
+                "fontFamily": "DejaVu Serif, sans-serif",
             },
         ),
     ],
@@ -213,10 +208,7 @@ app.layout = html.Div(
 )
 
 
-@app.callback(
-    Output("items-hist", "figure"),
-    Input("attribute-dist", "value")
-)
+@app.callback(Output("items-hist", "figure"), Input("attribute-dist", "value"))
 def update_histogram(attribute):
     return px.histogram(df, x=attribute)
 
@@ -224,7 +216,6 @@ def update_histogram(attribute):
 @app.callback(
     Output("table1", "data"),
     Output("table1", "columns"),
-    Output("table1", "style_data_conditional"),
     Input(component_id="number_input1", component_property="value"),
     Input(component_id="number_input2", component_property="value"),
     Input(component_id="name_input1", component_property="value"),
@@ -232,7 +223,11 @@ def update_histogram(attribute):
     Input(component_id="attribute_input", component_property="value"),
 )
 def update_table(input1, input2, name_input1, name_input2, attribute_input):
-    if not input1 or not input2 or not attribute_input:
+    if (
+        not (input1 or name_input1)
+        or not (input2 or name_input2)
+        or not attribute_input
+    ):
         raise PreventUpdate
     attribute_input.insert(0, "Full Name")
     if name_input1:
@@ -246,26 +241,9 @@ def update_table(input1, input2, name_input1, name_input2, attribute_input):
 
     df_filtered_transposed = df_filtered.transpose()
     df_filtered_transposed["Row Number"] = df_filtered_transposed.index
-    style_data_conditional = []
-    """
-    style_data_conditional = [
-        {
-            "if": {
-                "filter_query": "{{{col}}} = {}".format(i,col=col),
-                "column_id": col,
-            },
-            "backgroundColor": "rgb(144, 238, 144)",  # Light green
-            "color": "black",
-        }
-        # idxmax(axis=1) finds the max indices of each row
-        for (i, col) in enumerate(df_numeric_columns.map(lambda x: pd.to_numeric(x, errors='coerce')).select_dtypes("number").dropna().idxmax(axis=1)
-)
-    ]
-    """
-
     data = df_filtered_transposed.to_dict("records")
     columns = [{"name": str(i), "id": str(i)} for i in df_filtered_transposed.columns]
-    return data, columns, style_data_conditional
+    return data, columns
 
 
 @app.callback(
@@ -325,57 +303,35 @@ def update_bar_chart(input_value, filter_nationality, filter_club, slider_range)
     )
 
 
+@app.callback(
+    Output("name_input2", "options"),
+    Output("name_input1", "options"),
+    Input("number_input2", "value"),
+    Input("number_input1", "value"),
+)
+def update_names_from_numbers(input2, input1):
+    options2 = [{"label": name, "value": name} for name in df["Full Name"]]
+    options1 = options2
+
+    if input2 is not None:
+        options2 = [df["Full Name"].iloc[int(input2)]]
+    if input1 is not None:
+        options1 = [df["Full Name"].iloc[int(input1)]]
+
+    return options2, options1
+
+
+@app.callback(
+    Output("number_input2", "value"),
+    Output("number_input1", "value"),
+    Input("name_input2", "value"),
+    Input("name_input1", "value"),
+)
+def update_numbers_from_names(name2, name1):
+    value2 = df[df["Full Name"] == name2].index[0] if name2 is not None else None
+    value1 = df[df["Full Name"] == name1].index[0] if name1 is not None else None
+    return value2, value1
+
+
 if __name__ == "__main__":
     app.run_server(debug=True)
-
-
-"""
-@app.callback(
-    Output("filt_key", "filter_option"),
-    Input("filt_key", "search_value")
-)
-def update_filter_options(search_value):
-    if not search_value:
-        raise PreventUpdate
-    return [o for o in filter_option if search_value in o["label"]]
-
-@app.callback(
-    Output("filter_value", "options"),
-    Input("filt_key", "attr_value"),
-    Input("filter_value", "search_value")
-)
-def update_options(search_value,attr_value):
-   # if not search_value:
-   #     raise PreventUpdate
-   # options = 
-    #return [o for o in options if search_value in o]
-    return df[attr_value].tolist()
-app.layout = html.Div([
-    html.H4('Interactive scatter plot with the dataset'),
-    dcc.RadioItems(filter_options=["\'Wage(in Euro)\'", '\'Overall\''], value="\'Overall\'",id='controls-and-radio-item'),
-    dcc.Graph(id="scatter-plot"),
-    html.P("Filter by Age:"),
-    dcc.RangeSlider(
-        id='range-slider',
-        min=0, max=60, step=1,
-        marks={10:'10',15: '15',20:'20',25: '25',30:'30',35: '35',40:'40',45: '45'},
-        value=[df['\'Age\''].min(), df['\'Age\''].max()]
-    ),
-])
-
-
-@app.callback(
-    Output("scatter-plot", "figure"), 
-    Input(component_id='controls-and-radio-item', component_property='value'),
-    Input("range-slider", "value"))
-def update_bar_chart(slider_range):
-    low, high = slider_range
-    mask = (df['\'Age\''] > low) & (df['\'Age\''] < high)
-    fig = px.scatter(
-        df[mask], x='\'Age\'', y=col_chosen,
-        hover_data=['\'Full Name\''])
-    return fig
-
-
-app.run_server(debug=True)
-"""
