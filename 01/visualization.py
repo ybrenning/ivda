@@ -46,9 +46,32 @@ app.layout = html.Div(
                     id="attribute-dist",
                     clearable=False,
                 ),
-            ]
+            ],
+            style={
+                "textAlign": "left",
+                "display": "inline-block",
+                "margin-left": 20,
+                "width": "90%",
+            },
+        ),
+        html.Div(
+            [
+                html.H4("Filter by Nationality"),
+                dcc.Dropdown(
+                    df["Nationality"].to_list(), id="hist-1-filter-nationality", multi=True
+                ),
+                html.H4("Filter by Club Name"),
+                dcc.Dropdown(clubs.to_list(), id="hist-1-filter-club", multi=True),
+            ],
+            style={
+                "textAlign": "left",
+                "display": "inline-block",
+                "margin-left": 20,
+                "width": "90%",
+            },
         ),
         dcc.Graph(id="items-hist"),
+        html.H2("Plot ages"),
         html.Div(
             [
                 html.H4("Attribute"),
@@ -124,6 +147,7 @@ app.layout = html.Div(
             },
         ),
         html.Br(style={"margin": "100"}),
+        html.H2("Compare players"),
         html.Div(
             [
                 html.Div(
@@ -206,9 +230,24 @@ app.layout = html.Div(
 )
 
 
-@app.callback(Output("items-hist", "figure"), Input("attribute-dist", "value"))
-def update_histogram(attribute):
-    return px.histogram(df, x=attribute)
+@app.callback(
+    Output("items-hist", "figure"),
+    Input("attribute-dist", "value"),
+    Input("hist-1-filter-nationality", "value"),
+    Input("hist-1-filter-club", "value"),
+)
+def update_histogram(attribute, filter_nationality, filter_club):
+    df_filtered = df
+    color = None
+
+    if filter_nationality:
+        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
+        color = "Nationality"
+    if filter_club:
+        df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
+        color = "Club Name"
+
+    return px.histogram(df_filtered, x=attribute, hover_data=hover_data, color=color)
 
 
 @app.callback(
