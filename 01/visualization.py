@@ -8,12 +8,10 @@ DATA_PATH = os.getcwd() + "/data/processed.csv"
 
 df = pd.read_csv(DATA_PATH, low_memory=False)
 
-app = Dash(__name__)
-
 hover_data = ["Full Name", "Wage(in Euro)", "Overall", "Nationality"]
 clubs = df["Club Name"]
 
-STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total") :].tolist()
+STAT_NAMES = df.columns[df.columns.tolist().index("Pace Total"):].tolist()
 
 excluded_attributes = [
     "Known As",
@@ -21,6 +19,8 @@ excluded_attributes = [
     "National Team Image Link",
     "Image Link",
 ]
+
+app = Dash(__name__)
 
 app.layout = html.Div(
     [
@@ -58,10 +58,16 @@ app.layout = html.Div(
             [
                 html.H4("Filter by Nationality"),
                 dcc.Dropdown(
-                    df["Nationality"].to_list(), id="hist-1-filter-nationality", multi=True
+                    df["Nationality"].to_list(),
+                    id="hist-1-filter-nationality",
+                    multi=True
                 ),
                 html.H4("Filter by Club Name"),
-                dcc.Dropdown(clubs.to_list(), id="hist-1-filter-club", multi=True),
+                dcc.Dropdown(
+                    clubs.to_list(),
+                    id="hist-1-filter-club",
+                    multi=True
+                ),
             ],
             style={
                 "textAlign": "left",
@@ -94,7 +100,9 @@ app.layout = html.Div(
             [
                 html.H4("Filter by Nationality"),
                 dcc.Dropdown(
-                    df["Nationality"].to_list(), id="filter_nationality", multi=True
+                    df["Nationality"].to_list(),
+                    id="filter_nationality",
+                    multi=True
                 ),
                 html.H4("Filter by Club Name"),
                 dcc.Dropdown(clubs.to_list(), id="filter_club", multi=True),
@@ -201,7 +209,10 @@ app.layout = html.Div(
                     [
                         html.H3("Choose Attributes"),
                         dcc.Dropdown(
-                            list(set(df.columns.to_list()) ^ set(excluded_attributes)),
+                            list(
+                                set(df.columns.to_list()) ^
+                                set(excluded_attributes)
+                            ),
                             id="attribute_input",
                             multi=True,
                         ),
@@ -209,14 +220,29 @@ app.layout = html.Div(
                             id="table1",
                         ),
                     ],
-                    style={"text-align": "left", "margin": "auto", "width": "50%"},
+                    style={
+                        "text-align": "left",
+                        "margin": "auto",
+                        "width": "50%"
+                    },
                 ),
                 html.Div([
                     html.Img(id="img-1", src=""),
-                ], style={"text-align": "left", "display": "inline-block", "margin-top": 20, "margin-right": 20}),
+                ], style={
+                         "text-align": "left",
+                         "display": "inline-block",
+                         "margin-top": 20,
+                         "margin-right": 20
+                     }
+                ),
                 html.Div([
                     html.Img(id="img-2", src=""),
-                ], style={"text-align": "right", "display": "inline-block", "margin-left": 20}),
+                ], style={
+                         "text-align": "right",
+                         "display": "inline-block",
+                         "margin-left": 20
+                     }
+                ),
             ],
             style={
                 "margin": "auto",
@@ -247,13 +273,20 @@ def update_histogram(attribute, filter_nationality, filter_club):
     color = None
 
     if filter_nationality:
-        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
+        df_filtered = df_filtered[
+            df_filtered["Nationality"].isin(filter_nationality)
+        ]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
         color = "Club Name"
 
-    return px.histogram(df_filtered, x=attribute, hover_data=hover_data, color=color)
+    return px.histogram(
+        df_filtered,
+        x=attribute,
+        hover_data=hover_data,
+        color=color
+    )
 
 
 @app.callback(
@@ -280,9 +313,12 @@ def update_table(input1, input2, name_input1, name_input2, attribute_input):
     df_filtered_transposed["Row Number"] = df_filtered_transposed.index
     data = df_filtered_transposed.to_dict("records")
 
-    columns = [{"name": str(i), "id": str(i)} for i in df_filtered_transposed.columns]
+    columns = [
+        {"name": str(i), "id": str(i)} for i in df_filtered_transposed.columns
+    ]
 
-    img1, img2 = df.loc[df_filtered.index.tolist()[0], "Image Link"], df.loc[df_filtered.index.tolist()[1], "Image Link"]
+    img1 = df.loc[df_filtered.index.tolist()[0], "Image Link"]
+    img2 = df.loc[df_filtered.index.tolist()[1], "Image Link"]
 
     return data, columns, img1, img2
 
@@ -294,14 +330,21 @@ def update_table(input1, input2, name_input1, name_input2, attribute_input):
     Input("filter_club", "value"),
     Input("range-slider2", "value"),
 )
-def update_scatter_chart(input_value, filter_nationality, filter_club, slider_range):
+def update_scatter_chart(
+        input_value,
+        filter_nationality,
+        filter_club,
+        slider_range
+):
     df_filtered = df
     low, high = slider_range
     mask = (df["Age"] > low) & (df["Age"] < high)
     color = None
 
     if filter_nationality:
-        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
+        df_filtered = df_filtered[
+            df_filtered["Nationality"].isin(filter_nationality)
+        ]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
@@ -310,7 +353,11 @@ def update_scatter_chart(input_value, filter_nationality, filter_club, slider_ra
         raise PreventUpdate
 
     return px.scatter(
-        df_filtered[mask], x="Age", y=input_value, hover_data=hover_data, color=color
+        df_filtered[mask],
+        x="Age",
+        y=input_value,
+        hover_data=hover_data,
+        color=color
     )
 
 
@@ -321,13 +368,20 @@ def update_scatter_chart(input_value, filter_nationality, filter_club, slider_ra
     Input("filter_club", "value"),
     Input("range-slider", "value"),
 )
-def update_bar_chart(input_value, filter_nationality, filter_club, slider_range):
+def update_bar_chart(
+        input_value,
+        filter_nationality,
+        filter_club,
+        slider_range
+):
     df_filtered = df
     low, high = slider_range
     color = None
 
     if filter_nationality:
-        df_filtered = df_filtered[df_filtered["Nationality"].isin(filter_nationality)]
+        df_filtered = df_filtered[
+            df_filtered["Nationality"].isin(filter_nationality)
+        ]
         color = "Nationality"
     if filter_club:
         df_filtered = df_filtered[df_filtered["Club Name"].isin(filter_club)]
@@ -352,9 +406,13 @@ def update_bar_chart(input_value, filter_nationality, filter_club, slider_range)
     Input("name_input1", "value"),
 )
 def update_numbers_from_names(name2, name1):
-    value2 = df[df["Full Name"] == name2].index[0] if name2 is not None else None
+    value2 = df[
+        df["Full Name"] == name2
+    ].index[0] if name2 is not None else None
 
-    value1 = df[df["Full Name"] == name1].index[0] if name1 is not None else None
+    value1 = df[
+        df["Full Name"] == name1
+    ].index[0] if name1 is not None else None
 
     return value2, value1
 
