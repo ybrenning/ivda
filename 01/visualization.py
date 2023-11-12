@@ -135,7 +135,7 @@ app.layout = html.Div(
                             id="number_input1",
                             type="number",
                             value=1,
-                            min=1,
+                            min=0,
                             max=len(df.index),
                         ),
                         html.H3("Player Name:"),
@@ -158,7 +158,7 @@ app.layout = html.Div(
                             id="number_input2",
                             type="number",
                             value=2,
-                            min=1,
+                            min=0,
                             max=len(df.index),
                         ),
                         html.H3("Player Name:"),
@@ -223,18 +223,9 @@ def update_histogram(attribute):
     Input(component_id="attribute_input", component_property="value"),
 )
 def update_table(input1, input2, name_input1, name_input2, attribute_input):
-    if (
-        not (input1 or name_input1)
-        or not (input2 or name_input2)
-        or not attribute_input
-    ):
+    if not input1 or not input2 or not attribute_input:
         raise PreventUpdate
     attribute_input.insert(0, "Full Name")
-    if name_input1:
-        input1 = np.where(df["Full Name"] == name_input1)[0][0]
-
-    if name_input2:
-        input2 = np.where(df["Full Name"] == name_input2)[0][0]
 
     df_filtered = df.iloc[[int(input1), int(input2)]]
     df_filtered = df_filtered[attribute_input]
@@ -303,9 +294,10 @@ def update_bar_chart(input_value, filter_nationality, filter_club, slider_range)
     )
 
 
+'''
 @app.callback(
-    Output("name_input2", "options"),
-    Output("name_input1", "options"),
+    Output("name_input2", "value"),
+    Output("name_input1", "value"),
     Input("number_input2", "value"),
     Input("number_input1", "value"),
 )
@@ -318,8 +310,8 @@ def update_names_from_numbers(input2, input1):
     if input1 is not None:
         options1 = [df["Full Name"].iloc[int(input1)]]
 
-    return options2, options1
-
+    return None, None
+'''
 
 @app.callback(
     Output("number_input2", "value"),
@@ -331,7 +323,6 @@ def update_numbers_from_names(name2, name1):
     value2 = df[df["Full Name"] == name2].index[0] if name2 is not None else None
     value1 = df[df["Full Name"] == name1].index[0] if name1 is not None else None
     return value2, value1
-
 
 if __name__ == "__main__":
     app.run_server(debug=True)
