@@ -172,6 +172,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             df["Full Name"].tolist(),
                             id="name_input1",
+                            searchable=True,
                         ),
                     ],
                     style={
@@ -195,6 +196,7 @@ app.layout = html.Div(
                         dcc.Dropdown(
                             df["Full Name"].tolist(),
                             id="name_input2",
+                            searchable=True,
                         ),
                     ],
                     style={
@@ -215,6 +217,7 @@ app.layout = html.Div(
                             ),
                             id="attribute_input",
                             multi=True,
+                            searchable=True
                         ),
                         dash_table.DataTable(
                             id="table1",
@@ -285,7 +288,8 @@ def update_histogram(attribute, filter_nationality, filter_club):
         df_filtered,
         x=attribute,
         hover_data=hover_data,
-        color=color
+        color=color,
+        template="seaborn"
     )
 
 
@@ -357,7 +361,8 @@ def update_scatter_chart(
         x="Age",
         y=input_value,
         hover_data=hover_data,
-        color=color
+        color=color,
+        template="seaborn"
     )
 
 
@@ -396,6 +401,7 @@ def update_bar_chart(
         y=input_value,
         hover_data=hover_data,
         color=color,
+        template="seaborn"
     )
 
 
