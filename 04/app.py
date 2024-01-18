@@ -188,6 +188,7 @@ app.layout = html.Div([
 ])
 
 
+# TODO: Show precision, recall, F1?? 
 @app.callback(
     Output("params-plot", "figure"),
     Input("parameter", "value")
