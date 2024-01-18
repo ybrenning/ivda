@@ -1,0 +1,19 @@
+.center {
+  text-align: center;
+}
+
+.container > img {
+  height: 100%;
+  width: auto;
+}
+.container {
+  height: 500px;
+  display: flex;
+  justify-content: center;
+}
+
+.image {
+  height: 100%;
+  width: auto;
+  margin-right: 300px;  /* Adjust the margin to change the distance between images */
+}
