@@ -2,13 +2,12 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-
 from dash import Dash, Input, Output, dcc, html
-from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import scale
 from sklearn.svm import SVC
-
 
 df = pd.read_csv('data/preprocessed.csv')
 
@@ -44,13 +43,19 @@ def plot_loss_curves():
     y2 = mlp2.loss_curve_
 
     fig.add_trace(
-        go.Scatter(x=list(range(0, len(y1))), y=y1, name="Neural Network 1"),
-        # row=1, col=1
+        go.Scatter(
+            x=list(range(0, len(y1))),
+            y=y1,
+            name="Neural Network 1"
+        )
     )
 
     fig.add_trace(
-        go.Scatter(x=list(range(0, len(y2))), y=y2, name="Neural Network 2"),
-        # row=1, col=2
+        go.Scatter(
+            x=list(range(0, len(y2))),
+            y=y2,
+            name="Neural Network 2"
+        ),
     )
 
     fig.update_layout(
@@ -99,17 +104,14 @@ def plot_learning_curve(mlp_name):
         name='Cross Val',
     ))
 
-    if mlp_name == "1":
-        yrange = [0.95, 1.]
-    else:
-        yrange = [0.8, 1.]
+    yrange = [0.965, 0.985]
 
     fig.update_yaxes(range=yrange)
     fig.update_traces(mode='lines')
 
     fig.update_layout(
         title=f"Neural Network {mlp_name}",
-        height=400,
+        height=500,
         width=600,
         xaxis_title="No. of instances",
         yaxis_title="Accuracy"
@@ -117,8 +119,64 @@ def plot_learning_curve(mlp_name):
     return fig
 
 
+def plot_scores(mlps):
+    mlp1, mlp2 = mlps
+    mlp1.fit(X_train, y_train)
+    y_preds_1 = mlp1.predict(X_test)
+
+    mlp2.fit(X_train, y_train)
+    y_preds_2 = mlp1.predict(X_test)
+
+    y_preds = [y_preds_1, y_preds_2]
+    names = ['Neural Network 1', 'Neural Network 2']
+    classes = ["Not Pulsar Star", "Pulsar Star"]
+
+    df = pd.DataFrame()
+    for i in range(len(names)):
+        report = classification_report(
+            y_test,
+            y_preds[i],
+            target_names=classes,
+            output_dict=True
+        )
+
+        # Extract metrics for each class
+        precision = [report[class_name]['precision'] for class_name in classes]
+        recall = [report[class_name]['recall'] for class_name in classes]
+        f1_score = [report[class_name]['f1-score'] for class_name in classes]
+
+        model_df = pd.DataFrame({
+            'Class': classes * 3,
+            'Metric': ['Precision'] * len(classes) + ['Recall'] * len(classes) + ['F1-Score'] * len(classes),
+            'Score': precision + recall + f1_score,
+            'Model': [names[i]] * (3 * len(classes))
+        })
+
+        df = pd.concat([df, model_df], ignore_index=True)
+
+    fig = px.bar(
+        df,
+        x='Class',
+        y='Score',
+        color='Metric',
+        facet_col='Model',
+        color_discrete_map={
+            'Precision': 'blue',
+            'Recall': 'green',
+            'F1-Score': 'orange'
+        },
+        labels={'Score': 'Score', 'variable': 'Metric', 'x': 'Class'},
+        title='Interactive Model Performance by Class',
+        barmode='group'
+    )
+
+    fig.update_layout(yaxis_title='Score', xaxis_title='Class')
+    return fig
+
+
 app = Dash(__name__)
 
+# TODO: Show scatter w/ SVM hyperplane
 app.layout = html.Div([
     html.Div([
         html.H1("Submission 2 (Yannick Brenning, Yannik Lange)"),
@@ -157,6 +215,11 @@ app.layout = html.Div([
         html.Img(src=app.get_asset_url("nn-2.png"), className="image"),
     ], className="container"),
 
+    dcc.Graph(
+        figure=plot_scores((mlp1, mlp2)),
+        id="plot-scores"
+    ),
+
     html.Div([
         html.Div([
             html.H4("Loss Curves"),
@@ -188,7 +251,7 @@ app.layout = html.Div([
 ])
 
 
-# TODO: Show precision, recall, F1?? 
+# TODO: Show precision, recall, F1??
 @app.callback(
     Output("params-plot", "figure"),
     Input("parameter", "value")
