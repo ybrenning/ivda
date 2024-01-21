@@ -187,10 +187,10 @@ app.layout = html.Div([
     ], className="center"),
 
     html.Div([
-        html.H4("Select Parameter to visualize"),
+        html.H4("Select parameter to visualize"),
         html.Div([
             dcc.Dropdown(
-                ["C", "degree", "gamma"],
+                ["C", "degree", "gamma", "kernel"],
                 value="C",
                 id="parameter"
             )
@@ -319,6 +319,28 @@ def plot_params(parameter):
             text=[round(score, 3) for score in scores]
         )
 
+    elif parameter == "kernel":
+        kernels = ["linear", "poly", "rbf", "sigmoid"]
+        scores = []
+        for kernel in kernels:
+            svc = SVC(kernel=kernel, random_state=42)
+            svc.fit(X_train, y_train)
+            scores.append(svc.score(X_test, y_test))
+
+        df_plot = pd.DataFrame(
+            {
+                "kernel": [str(k) for k in kernels],
+                "accuracy": scores
+            }
+        )
+
+        return px.bar(
+            df_plot,
+            x="kernel",
+            y="accuracy",
+            text=[round(score, 3) for score in scores]
+        )
+
 
 @app.callback(
     Output("plot-f1", "figure"),
@@ -341,6 +363,7 @@ def plot_svm_scores(parameter):
         scores = []
         for degree in degrees:
             svc = SVC(kernel="poly", degree=degree, random_state=42)
+            svc.fit(X_train, y_train)
             y_preds = svc.predict(X_test)
             scores.append(f1_score(y_test, y_preds))
 
@@ -356,13 +379,30 @@ def plot_svm_scores(parameter):
         scores = []
         for gamma in gammas:
             svc = SVC(gamma=gamma, random_state=42)
+            svc.fit(X_train, y_train)
             y_preds = svc.predict(X_test)
             scores.append(f1_score(y_test, y_preds))
 
         df_plot = pd.DataFrame(
             {
                 "gamma": [str(g) for g in gammas],
-                "accuracy": scores
+                "f1-score": scores
+            }
+        )
+
+    elif parameter == "kernel":
+        kernels = ["linear", "poly", "rbf", "sigmoid"]
+        scores = []
+        for kernel in kernels:
+            svc = SVC(kernel=kernel, random_state=42)
+            svc.fit(X_train, y_train)
+            y_preds = svc.predict(X_test)
+            scores.append(f1_score(y_test, y_preds))
+
+        df_plot = pd.DataFrame(
+            {
+                "kernel": [str(k) for k in kernels],
+                "f1-score": scores
             }
         )
 
