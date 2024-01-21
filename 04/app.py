@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, Input, Output, dcc, html
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import scale
@@ -203,6 +203,10 @@ app.layout = html.Div([
     ], className="center"),
 
     html.Div([
+        dcc.Graph(id="plot-f1")
+    ], className="center"),
+
+    html.Div([
         html.H2("Comparison of Neural Networks"),
     ], className="center"),
 
@@ -251,7 +255,6 @@ app.layout = html.Div([
 ])
 
 
-# TODO: Show precision, recall, F1??
 @app.callback(
     Output("params-plot", "figure"),
     Input("parameter", "value")
@@ -265,11 +268,11 @@ def plot_params(parameter):
             svc.fit(X_train, y_train)
             scores.append(svc.score(X_test, y_test))
 
-        df_plot = pd.DataFrame({"C": [str(c) for c in cs], "score": scores})
+        df_plot = pd.DataFrame({"C": [str(c) for c in cs], "accuracy": scores})
         return px.bar(
             df_plot,
             x="C",
-            y="score",
+            y="accuracy",
             text=[round(score, 3) for score in scores]
         )
 
@@ -284,13 +287,13 @@ def plot_params(parameter):
         df_plot = pd.DataFrame(
             {
                 "degree": [str(d) for d in degrees],
-                "score": scores
+                "accuracy": scores
             }
         )
         return px.bar(
             df_plot,
             x="degree",
-            y="score",
+            y="accuracy",
             text=[round(score, 3) for score in scores]
         )
 
@@ -305,15 +308,70 @@ def plot_params(parameter):
         df_plot = pd.DataFrame(
             {
                 "gamma": [str(g) for g in gammas],
-                "score": scores
+                "accuracy": scores
             }
         )
+
         return px.bar(
             df_plot,
             x="gamma",
-            y="score",
+            y="accuracy",
             text=[round(score, 3) for score in scores]
         )
+
+
+@app.callback(
+    Output("plot-f1", "figure"),
+    Input("parameter", "value")
+)
+def plot_svm_scores(parameter):
+    if parameter == "C":
+        cs = [10**x for x in range(-2, 4)]
+        scores = []
+        for c in cs:
+            svc = SVC(C=c, random_state=42)
+            svc.fit(X_train, y_train)
+            y_preds = svc.predict(X_test)
+            scores.append(f1_score(y_test, y_preds))
+
+        df_plot = pd.DataFrame({"C": [str(c) for c in cs], "f1-score": scores})
+
+    elif parameter == "degree":
+        degrees = list(range(1, 7))
+        scores = []
+        for degree in degrees:
+            svc = SVC(kernel="poly", degree=degree, random_state=42)
+            y_preds = svc.predict(X_test)
+            scores.append(f1_score(y_test, y_preds))
+
+        df_plot = pd.DataFrame(
+            {
+                "degree": [str(d) for d in degrees],
+                "f1-score": scores
+            }
+        )
+
+    elif parameter == "gamma":
+        gammas = [10**x for x in range(-2, 3)]
+        scores = []
+        for gamma in gammas:
+            svc = SVC(gamma=gamma, random_state=42)
+            y_preds = svc.predict(X_test)
+            scores.append(f1_score(y_test, y_preds))
+
+        df_plot = pd.DataFrame(
+            {
+                "gamma": [str(g) for g in gammas],
+                "accuracy": scores
+            }
+        )
+
+    return px.bar(
+        df_plot,
+        x=parameter,
+        y="f1-score",
+        text=[round(score, 3) for score in scores]
+    )
 
 
 if __name__ == '__main__':
