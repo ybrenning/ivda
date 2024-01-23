@@ -7,26 +7,26 @@ from sklearn import metrics
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, scale
 from sklearn.svm import SVC
 from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from io import BytesIO
+import base64
+from dash.exceptions import PreventUpdate
 
 df = pd.read_csv("data/preprocessed.csv")
 seed = 42
 
-# X = df[df.columns[:-1]].to_numpy()
-# y = df['target_class'].to_numpy()
-# X_scaled = scale(X)
+X = df[df.columns[:-1]].to_numpy()
+y = df["target_class"].to_numpy()
+X_scaled = scale(X)
 
-# X_train, X_test, y_train, y_test = train_test_split(
-#     X_scaled,
-#     y,
-#     random_state=seed
-# )
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, random_state=seed)
 
 
 # returns svm, X_train, X_test, y_train, y_test
-def train_svm(df):
+def train_svm(df, k, c):
     X_train, X_test, y_train, y_test = train_test_split(
         df.drop("target_class", axis=1),
         df["target_class"],
@@ -35,15 +35,8 @@ def train_svm(df):
     )
 
     # training
-    svm = SVC(random_state=seed)
+    svm = SVC(random_state=seed, kernel=k, C=float(c))
     svm.fit(X_train, y_train)
-
-    # Predict the response for test dataset
-    y_pred = svm.predict(X_test)
-
-    print("Accuracy:", metrics.accuracy_score(y_test, y_pred))
-    print("Precision:", metrics.precision_score(y_test, y_pred))
-    print("Recall:", metrics.recall_score(y_test, y_pred))
 
     return svm, X_train, X_test, y_train, y_test
 
@@ -211,11 +204,10 @@ def do_mlp(X_train, y_train):
     return mlp1, mlp2
 
 
-svm, X_train, X_test, y_train, y_test = train_svm(df)
-
-# df_reduced = do_pca(df)
+df_reduced = do_pca(df)
 
 mlp1, mlp2 = do_mlp(X_train, y_train)
+
 
 app = Dash(__name__)
 
@@ -236,21 +228,31 @@ app.layout = html.Div(
         ),
         html.Div(
             [
-                html.H4("Select Parameter to visualize"),
-                html.Div(
-                    [dcc.Dropdown(["C", "degree", "gamma"], value="C", id="parameter")],
-                    style={"width": "25%", "margin": "auto"},
+                html.H3("C Value"),
+                dcc.Input(
+                    id="c_input",
+                    type="number",
+                    value=0.1,
+                    min=0,
+                    # max=1,
+                ),
+                html.H3("Kernel Function:"),
+                dcc.Dropdown(
+                    ["linear", "poly", "rbf", "sigmoid"],
+                    value="linear",
+                    id="kernel_input",
                 ),
             ],
-            className="center",
         ),
+        html.Div([dcc.Graph(id="svm_bar")]),
         html.Div(
-            [html.H4("Parameter value comparison"), dcc.Graph(id="params-plot")],
+            [html.H3("Scatter Plot SVM with PCA"), html.Img(id="plot_scatter")],
             className="center",
-        ),
-        html.Div(
-            [html.H4("Scatter Plot SVM"), dcc.Graph(id="scatter-plot")],
-            className="center",
+            style={
+                "margin": "auto",
+                "width": "80%",
+                "fontFamily": "DejaVu Serif, sans-serif",
+            },
         ),
         html.Div(
             [
@@ -314,153 +316,127 @@ app.layout = html.Div(
             ],
             className="center",
         ),
-    ]
+    ],
 )
 
 
-@app.callback(Output("scatter-plot", "figure"), Input("parameter", "value"))
-def plot_scatter(parameter):
-    # Extract features and target
-    features = df.drop("target_class", axis=1)
-    target = df["target_class"]
+@app.callback(
+    Output("svm_bar", "figure"),
+    [Input("kernel_input", "value"), Input("c_input", "value")],
+)
+def svm_bar_chart(kernel_input, c_input):
+    if (
+        kernel_input is None
+        or c_input is None
+        or not (isinstance(c_input, float) or isinstance(c_input, int))
+    ):
+        raise PreventUpdate
+    svm, X_train, X_test, y_train, y_test = train_svm(df, kernel_input, c_input)
 
-    # Create a mesh grid to plot the decision boundary
-    h = 0.02  # Step size in the mesh
+    df_reduced = do_pca(df)
+    svm_reduced, X_r_train, X_r_test, y_train, y_test = train_svm(
+        df_reduced, kernel_input, c_input
+    )
 
-    # Create a list to store mesh grids for each pair of features
-    mesh_grids = []
+    y_pred_svm = svm.predict(X_test)
+    y_pred_svm_reduced = svm_reduced.predict(X_r_test)
 
-    for i in range(features.shape[1]):
-        for j in range(i + 1, features.shape[1]):
-            x_min, x_max = features.iloc[:, i].min() - 1, features.iloc[:, i].max() + 1
-            y_min, y_max = features.iloc[:, j].min() - 1, features.iloc[:, j].max() + 1
+    metrics_svm = {
+        "Accuracy": metrics.accuracy_score(y_test, y_pred_svm),
+        "Precision": metrics.precision_score(y_test, y_pred_svm),
+        "Recall": metrics.recall_score(y_test, y_pred_svm),
+    }
 
-            xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+    metrics_svm_reduced = {
+        "Accuracy": metrics.accuracy_score(y_test, y_pred_svm_reduced),
+        "Precision": metrics.precision_score(y_test, y_pred_svm_reduced),
+        "Recall": metrics.recall_score(y_test, y_pred_svm_reduced),
+    }
 
-            mesh_grids.append((xx, yy))
+    # Create a new DataFrame for the bar chart with both SVM and PCA metrics
+    new_df = pd.DataFrame(
+        {
+            "Metric": ["Accuracy", "Precision", "Recall"] * 2,
+            "Value": list(metrics_svm.values()) + list(metrics_svm_reduced.values()),
+            "Model": ["SVM"] * 3 + ["SVM with PCA"] * 3,
+        }
+    )
 
-    # Create a scatter plot matrix
-    fig = go.Figure()
-
-    # Add scatter plots for each pair of features
-    for i in range(features.shape[1]):
-        for j in range(i + 1, features.shape[1]):
-            fig.add_trace(
-                go.Scatter(
-                    x=features.iloc[:, i],
-                    y=features.iloc[:, j],
-                    mode="markers",
-                    marker=dict(
-                        color=target,
-                        colorscale="Viridis",
-                        size=8,
-                        line=dict(width=0.5, color="white"),
-                    ),
-                    showlegend=False,
-                )
-            )
-
-            # Add decision boundary to the plot
-            mesh_predictions = svm.predict(
-                np.c_[mesh_grids.pop(0)[0].ravel(), mesh_grids.pop(0)[1].ravel()]
-            )
-            mesh_predictions = mesh_predictions.reshape(mesh_grids.pop(0)[0].shape)
-
-            fig.add_trace(
-                go.Contour(
-                    x=mesh_grids.pop(0)[0].ravel(),
-                    y=mesh_grids.pop(0)[1].ravel(),
-                    z=mesh_predictions,
-                    colorscale="Viridis",
-                    showscale=False,
-                    opacity=0.5,
-                    hoverinfo="skip",
-                )
-            )
-
-    fig.update_layout(
-        title="SVM Decision Boundary",
-        dragmode="select",
-        width=1800,
-        height=1800,
-        hovermode="closest",
+    # Use Plotly to create the grouped bar chart
+    fig = px.bar(
+        new_df,
+        x="Metric",
+        y="Value",
+        hover_data="Value",
+        color="Metric",
+        color_discrete_map={
+            "Accuracy": "blue",
+            "Precision": "green",
+            "Recall": "orange",
+        },
+        facet_col="Model",
+        title="SVM Metrics",
+        facet_col_spacing=0.08,
     )
 
     return fig
 
 
-# def plot_scatter(parameter):
-#     # Create a meshgrid to represent the decision boundary
-#     x_min, x_max = df_reduced["PC1"].min() - 1, df_reduced["PC1"].max() + 1
-#     y_min, y_max = df_reduced["PC2"].min() - 1, df_reduced["PC2"].max() + 1
-#     h = 0.02  # Step size in the mesh
-#     xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+@app.callback(
+    Output("plot_scatter", "src"),
+    [Input("kernel_input", "value"), Input("c_input", "value")],
+)
+def plot_scatter(kernel_input, c_input):
+    if kernel_input is None or c_input is None:
+        raise PreventUpdate
+    svm_reduced, X_r_train, X_r_test, y_r_train, y_r_test = train_svm(
+        df_reduced, kernel_input, c_input
+    )
 
-#     # Obtain decision values for each point in the meshgrid
-#     Z = svm.decision_function(np.c_[xx.ravel(), yy.ravel()])
-#     Z = Z.reshape(xx.shape)
+    X_reduced = df_reduced.drop("target_class", axis=1)
+    y = df_reduced["target_class"]
 
-#     # Create a filled contour plot
-#     fig = px.scatter(
-#         df_reduced,
-#         x="PC1",
-#         y="PC2",
-#         color="target_class",
-#         title="SVM Decision Boundary in Reduced 2D Space",
-#     )
-#     fig = fig.add_contour(
-#         x=np.arange(x_min, x_max, h),
-#         y=np.arange(y_min, y_max, h),
-#         z=Z,
-#         contours=dict(coloring="lines", showlabels=False),
-#         line=dict(width=0),
-#         colorscale="Viridis",
-#         showscale=False,
-#     )
-#     return fig
+    def make_meshgrid(x, y, h=0.02):
+        x_min, x_max = x.min() - 1, x.max() + 1
+        y_min, y_max = y.min() - 1, y.max() + 1
+        xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+        return xx, yy
 
+    def plot_contours(ax, clf, xx, yy, **params):
+        Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
+        Z = Z.reshape(xx.shape)
+        out = ax.contourf(xx, yy, Z, **params)
+        return out
 
-# TODO: Show precision, recall, F1??
-@app.callback(Output("params-plot", "figure"), Input("parameter", "value"))
-def plot_params(parameter):
-    if parameter == "C":
-        cs = [10**x for x in range(-2, 4)]
-        scores = []
-        for c in cs:
-            svc = SVC(C=c, random_state=seed)
-            svc.fit(X_train, y_train)
-            scores.append(svc.score(X_test, y_test))
-        #
-        df_plot = pd.DataFrame({"C": [str(c) for c in cs], "score": scores})
-        return px.bar(
-            df_plot, x="C", y="score", text=[round(score, 3) for score in scores]
-        )
+    fig, ax = plt.subplots()
+    # title for the plots
+    title = (
+        "Decision surface of "
+        + kernel_input
+        + " SVM with PCA(n=2) and C="
+        + str(c_input)
+    )
+    # Set-up grid for plotting.
+    X0, X1 = X_reduced["PC1"], X_reduced["PC2"]
+    xx, yy = make_meshgrid(X0, X1)
 
-    elif parameter == "degree":
-        degrees = list(range(1, 7))
-        scores = []
-        for degree in degrees:
-            svc = SVC(kernel="poly", degree=degree, random_state=seed)
-            svc.fit(X_train, y_train)
-            scores.append(svc.score(X_test, y_test))
+    plot_contours(ax, svm_reduced, xx, yy, cmap=plt.cm.coolwarm, alpha=0.8)
+    ax.scatter(X0, X1, c=y, cmap=plt.cm.coolwarm, s=20, edgecolors="k")
+    ax.set_xlabel("Principal Component 1")
+    ax.set_ylabel("Principal Component 2")
+    ax.set_xticks(())
+    ax.set_yticks(())
+    ax.set_title(title)
+    ax.legend("Kernel Function: " + kernel_input)
 
-        df_plot = pd.DataFrame({"degree": [str(d) for d in degrees], "score": scores})
-        return px.bar(
-            df_plot, x="degree", y="score", text=[round(score, 3) for score in scores]
-        )
+    # Convert the Matplotlib plot to a base64-encoded image
+    with BytesIO() as img_buf:
+        fig.savefig(img_buf, format="png")
+        # img_buf.seek(0)
+        img_data = base64.b64encode(img_buf.getbuffer()).decode("ascii")
+        fig_scat_matplotlib = f"data:image/png;base64,{img_data}"
 
-    elif parameter == "gamma":
-        gammas = [10**x for x in range(-2, 3)]
-        scores = []
-        for gamma in gammas:
-            svc = SVC(gamma=gamma, random_state=seed)
-            svc.fit(X_train, y_train)
-            scores.append(svc.score(X_test, y_test))
-
-        df_plot = pd.DataFrame({"gamma": [str(g) for g in gammas], "score": scores})
-        return px.bar(
-            df_plot, x="gamma", y="score", text=[round(score, 3) for score in scores]
-        )
+        return fig_scat_matplotlib
 
 
 if __name__ == "__main__":
