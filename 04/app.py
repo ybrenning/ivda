@@ -427,7 +427,7 @@ def plot_scatter(kernel_input, c_input):
     ax.set_xticks(())
     ax.set_yticks(())
     ax.set_title(title)
-    ax.legend("Kernel Function: " + kernel_input)
+    # ax.legend("Kernel Function: " + kernel_input)
 
     # Convert the Matplotlib plot to a base64-encoded image
     with BytesIO() as img_buf:
